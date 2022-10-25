@@ -1,13 +1,11 @@
-#include <imu_to_odom/imu_integrator.hpp>
-#include <tf/transform_broadcaster.h>
-#include <eigen_conversions/eigen_msg.h>
+#include <imu_to_odom/imu_to_odom.hpp>
 
 int main(int argc, char** argv) {
   ros::init(argc, argv, "imu_to_odom");
 
   ros::NodeHandle nh;
 
-  ImuIntegrator *imu_integrator = new ImuIntegrator(nh);
+  ImuOdom *imu_to_odom = new ImuOdom(nh);
   
   ros::spin();
 

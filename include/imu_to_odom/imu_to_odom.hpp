@@ -1,5 +1,5 @@
-#ifndef IMU_TO_ODOM_IMU_INTEGRATOR_HPP
-#define IMU_TO_ODOM_IMU_INTEGRATOR_HPP
+#ifndef IMU_TO_ODOM_IMU_TO_ODOM_HPP
+#define IMU_TO_ODOM_IMU_TO_ODOM_HPP
 
 // ROS includes
 #include "ros/ros.h"
@@ -10,21 +10,16 @@
 #include <geometry_msgs/TransformStamped.h>
 #include <nav_msgs/Odometry.h>
 
-struct Pose
+struct Piont
 {
-    /*
-    Orientation orien;
-    Position pos;
-    */
     Eigen::Vector3d pos;//位置
     Eigen::Matrix3d orien;//姿态 旋转矩阵表示
     Eigen::Vector3d w;//角速度
     Eigen::Vector3d v;//线速度
 };
 
-
 //imu处理
-class ImuIntegrator
+class ImuOdom
 {
 private:
     ros::NodeHandle nhi;
@@ -32,7 +27,7 @@ private:
     ros::Publisher odompub;
     nav_msgs::Odometry odom;
     ros::Time time;
-    Pose point;
+    Piont point;
     Eigen::Vector3d gravity;
 
     double deltaT;
@@ -40,21 +35,21 @@ private:
     
 public:
     //! Constructor.
-    ImuIntegrator(ros::NodeHandle& nh);
+    ImuOdom(ros::NodeHandle& nh);
     //! Destructor.
-    ~ImuIntegrator();
+    ~ImuOdom();
 
     void ImuCallback(const sensor_msgs::Imu &msg);
     void setGravity(const geometry_msgs::Vector3 &msg);
     void calcPosition(const geometry_msgs::Vector3 &msg);
     void calcOrientation(const geometry_msgs::Vector3 &msg);
-    void updateodom(const Pose point);
+    void updateodom(const Piont point);
 
 };
 
-ImuIntegrator::ImuIntegrator(ros::NodeHandle& nh):nhi(nh) {
+ImuOdom::ImuOdom(ros::NodeHandle& nh):nhi(nh) {
   //参数初始化
-  imusub = nhi.subscribe("/imu/data", 32, &ImuIntegrator::ImuCallback, this);
+  imusub = nhi.subscribe("/imu/data", 32, &ImuOdom::ImuCallback, this);
   odompub = nhi.advertise<nav_msgs::Odometry>("imu_odom", 32);
   
   odom.header.frame_id = "odom";
@@ -67,7 +62,7 @@ ImuIntegrator::ImuIntegrator(ros::NodeHandle& nh):nhi(nh) {
   firstT = true;
 }
 
-void ImuIntegrator::ImuCallback(const sensor_msgs::Imu &msg) {
+void ImuOdom::ImuCallback(const sensor_msgs::Imu &msg) {
   if (firstT) {
     time = msg.header.stamp;
     deltaT = 0;
@@ -85,13 +80,13 @@ void ImuIntegrator::ImuCallback(const sensor_msgs::Imu &msg) {
   // std::cout << pose.pos << std::endl;
 }
 
-void ImuIntegrator::setGravity(const geometry_msgs::Vector3 &msg) {
+void ImuOdom::setGravity(const geometry_msgs::Vector3 &msg) {
   gravity[0] = msg.x;
   gravity[1] = msg.y;
   gravity[2] = msg.z;
 }
 
-void ImuIntegrator::calcOrientation(const geometry_msgs::Vector3 &msg) {
+void ImuOdom::calcOrientation(const geometry_msgs::Vector3 &msg) {
   point.w << msg.x, msg.y, msg.z;
   //基于旋转矩阵表示方法
   Eigen::Matrix3d B;
@@ -110,7 +105,7 @@ void ImuIntegrator::calcOrientation(const geometry_msgs::Vector3 &msg) {
                 ((1 - std::cos(sigma)) / std::pow(sigma, 2)) * B * B);
 }
 
-void ImuIntegrator::calcPosition(const geometry_msgs::Vector3 &msg) {
+void ImuOdom::calcPosition(const geometry_msgs::Vector3 &msg) {
   Eigen::Vector3d acc_l(msg.x, msg.y, msg.z);//imu坐标系下的加速度
   Eigen::Vector3d acc_g = point.orien * acc_l;//转化到里程计坐标系下的加速度
   // Eigen::Vector3d acc(msg.x - gravity[0], msg.y - gravity[1], msg.z -
@@ -120,7 +115,7 @@ void ImuIntegrator::calcPosition(const geometry_msgs::Vector3 &msg) {
 
 }
 
-void ImuIntegrator::updateodom(const Pose point) {
+void ImuOdom::updateodom(const Piont point) {
   //位置
   odom.pose.pose.position.x = point.pos(0);
   odom.pose.pose.position.y = point.pos(1);
