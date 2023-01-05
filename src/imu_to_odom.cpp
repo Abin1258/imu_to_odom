@@ -8,6 +8,7 @@ int main(int argc, char** argv) {
   ImuOdom *imu_to_odom = new ImuOdom(nh);
   
   ros::spin();
+  
 
   return 0;
 }
